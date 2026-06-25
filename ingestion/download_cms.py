@@ -85,10 +85,44 @@ def resolve_download_url(dataset_id: str) -> str | None:
         log.error(f" Unexpected API format: {e}")
         return None
     """
-    Handls HTTP errors
+    Handles HTTP errors
     DNS failures, Connection refused, Timeouts and SSL Errors
     Bad JSON and Unstructured structures
     """
+
+def download_file(url: str, destination: Path) -> bool:
+    log.info(f" Downloading fille...")
+
+    try:
+        response = requests.get(url, stream=True, timeout=120)
+        response.raise_for_status()
+
+        destination.parent.mkdir(parents=True, exist_ok=True)
+
+        """ Downloads file in chunks """
+        with open(destination, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        """Calculate file size """
+        file_size_mb = destination.stat().st_size / (1024 * 1024)
+        log.info(f" Saved: {destination} ({file_size_mb:.2f} MB)")
+        return True
     
+    except requests.exceptions.HTTPError as e:
+        log.error(f" HTTP error downloading file: {e}")
+        return False
+    except requests.exceptions.ConnectionError as e:
+        log.error(f" Connection error: {e}")
+        return False
+    except requests.exceptions.Timeout as e:
+        log.error(f" Timeout error: {e}")
+        return False
+    """
+    Handles HTTP errors
+    Connection errors
+    Request errors
+    """
+
 
 
