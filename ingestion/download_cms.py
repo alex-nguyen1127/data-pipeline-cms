@@ -43,24 +43,35 @@ CMS_datasets = [
 local_data_dir = Path(os.getenv("LOCAL_DATA_DIR", "data/raw"))
 
 def resolve_download_url(dataset_id: str) -> str | None:
-    url = f"{CMS_metastore_base}/{dataset_id}?show-reference-ids=false"
     log.info(f"  Resolving download URL via metastore API...")
+    url = f"{CMS_metastore_base}/{dataset_id}?show-reference-ids=false"
 
     try:
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
+        """ 
+        Get metadata from the url API and raise error if the request failed. 
+        If successful, convert JSON response to dictionary
+        """
+        response = requests.get(url, timeout=30) 
+        response.raise_for_status() 
         metadata = response.json()
+
 
         distributions = metadata.get("distributions", [])
         if not distributions:
             log.error(f" No distribution found in metadata for {dataset_id  }")
             return None
         
+        """ 
+        Extract the download URL from the data object in the first distribution.
+        """
         download_url = distributions[0].get("data", {}).get("downloadURL")
         if not download_url:
             log.error(f" No download URL found in distribution for {dataset_id}")
             return None
         
+        """
+        Success case, return url.
+        """
         log.info(f" Resolved: {download_url}")
         return download_url
     
@@ -73,6 +84,11 @@ def resolve_download_url(dataset_id: str) -> str | None:
     except (json.JSONDecodeError, KeyError, IndexError) as e:
         log.error(f" Unexpected API format: {e}")
         return None
+    """
+    Handls HTTP errors
+    DNS failures, Connection refused, Timeouts and SSL Errors
+    Bad JSON and Unstructured structures
+    """
     
 
 
