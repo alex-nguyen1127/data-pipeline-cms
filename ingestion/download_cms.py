@@ -124,5 +124,43 @@ def download_file(url: str, destination: Path) -> bool:
     Request errors
     """
 
+def download_cms_datasets() -> dict:
+    results = {}
+    log.info(f"Starting CMS dataset download -> {local_data_dir}")
+    log.info(f"Datasets to download: {len(CMS_datasets)}")
 
+    for dataset in CMS_datasets:
+        log.info(f"Processing: {dataset['name']} ({dataset['description']})")
+        destination = local_data_dir / dataset["filename"]
+
+        """ Skips if aready downloaded"""
+        if destination.exists():
+            size_mb = destination.stat().st_size / (1024 * 1024)
+            log.info(f" Already exists, skipping ({size_mb:.2f} MB)")
+            results[dataset["name"]] = destination
+            continue
+
+        """ Find the current download url via the metastore API """
+        url = resolve_download_url(dataset["description"])
+        if url is None:
+            results[dataset["name"]] = None
+            continue
+        
+        """ Download CSV """
+        success = download_file(url, destination)
+        results[dataset["name"]] = destination if success else None
+
+    succeeded = sum(1 for v in results.values() if v is not None)
+    log.info(f"Download compete: {succeeded}/{len(CMS_datasets)} succeeded")
+    return results
+                    
+if __name__ == "__main__":
+    results = download_cms_datasets()
+    
+    failed = [name for name, path in results.items() if path is None]
+    if failed:
+        log.error(f"Failed to download datasets: {failed}")
+        raise SystemExit(1)
+    
+    log.info("All datasets downloaded successfully.")
 
