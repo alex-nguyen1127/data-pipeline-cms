@@ -110,7 +110,7 @@ def list_raw_files(s3_client) -> None:
 
 
 if __name__ == "__main__":
-    results = upload_file_to_s3()
+    results = upload_raw_files()
 
     failed = [name for name, ok in results.items() if not ok]
 
