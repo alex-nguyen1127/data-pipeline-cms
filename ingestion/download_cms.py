@@ -14,9 +14,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logging.basicConfig(
-    Level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger(__name__)
 
@@ -34,13 +34,13 @@ CMS_datasets = [
     },
     {
         "name": "timely_effective_care",
-        "dataset_id": "r4nx-7f4e",
+        "dataset_id": "yv7e-xc69",
         "filename": "timely_effective_care.csv",
-        "description": "Timely and effective care measures for hospitals",
-    }
+        "description": "Hospital quality measures: timely and effective care scores",
+    },
 ]
 
-local_data_dir = Path(os.getenv("LOCAL_DATA_DIR", "data/raw"))
+LOCAL_DATA_DIR = Path(os.getenv("LOCAL_DATA_DIR", "data/raw"))
 
 def resolve_download_url(dataset_id: str) -> str | None:
     log.info(f"  Resolving download URL via metastore API...")
@@ -56,15 +56,15 @@ def resolve_download_url(dataset_id: str) -> str | None:
         metadata = response.json()
 
 
-        distributions = metadata.get("distributions", [])
-        if not distributions:
+        distribution = metadata.get("distribution", [])
+        if not distribution:
             log.error(f" No distribution found in metadata for {dataset_id  }")
             return None
         
         """ 
         Extract the download URL from the data object in the first distribution.
         """
-        download_url = distributions[0].get("data", {}).get("downloadURL")
+        download_url = distribution[0].get("data", {}).get("downloadURL")
         if not download_url:
             log.error(f" No download URL found in distribution for {dataset_id}")
             return None
@@ -126,12 +126,12 @@ def download_file(url: str, destination: Path) -> bool:
 
 def download_cms_datasets() -> dict:
     results = {}
-    log.info(f"Starting CMS dataset download -> {local_data_dir}")
+    log.info(f"Starting CMS dataset download -> {LOCAL_DATA_DIR}")
     log.info(f"Datasets to download: {len(CMS_datasets)}")
 
     for dataset in CMS_datasets:
         log.info(f"Processing: {dataset['name']} ({dataset['description']})")
-        destination = local_data_dir / dataset["filename"]
+        destination = LOCAL_DATA_DIR / dataset["filename"]
 
         """ Skips if aready downloaded"""
         if destination.exists():
@@ -141,7 +141,7 @@ def download_cms_datasets() -> dict:
             continue
 
         """ Find the current download url via the metastore API """
-        url = resolve_download_url(dataset["description"])
+        url = resolve_download_url(dataset["dataset_id"])
         if url is None:
             results[dataset["name"]] = None
             continue
