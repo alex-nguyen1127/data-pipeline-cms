@@ -13,3 +13,10 @@ Accomplished:
 - Read raw data from S3 and write Pandas DataFrames to S3
 - Clean both datasets by normalizing, striping white space, replacing nulls, etc.
 - Uploaded cleaned data into S3
+
+Phase 3:
+
+Accomplished:
+- Created a PostgreSQL Schema
+- Implemented an S3-to-Postgres ETL pipeline
+- Post Load verification step for row count assertions
