@@ -20,3 +20,10 @@ Accomplished:
 - Created a PostgreSQL Schema
 - Implemented an S3-to-Postgres ETL pipeline
 - Post Load verification step for row count assertions
+
+Phase 4:
+
+Accomplished:
+- Defined all services (Postgres, Airflow webserver, airflow scheduler)
+- Apache Airflow runs inside Docker automatically executing pipeline on schedule (Sunday at 6am)
+- Docker Compose managing entire infrastructure
