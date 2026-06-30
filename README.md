@@ -45,7 +45,7 @@ Accomplished:
 - Uploaded raw data into S3
 - Structured logging, error handling
 
-### Phase 2:
+### Phase 2: Tranformation
 Scripts run:
 - clean_hospital.py
 
@@ -54,7 +54,7 @@ Accomplished:
 - Clean both datasets by normalizing, striping white space, replacing nulls, etc.
 - Uploaded cleaned data into S3
 
-### Phase 3:
+### Phase 3: Load
 Scripts run:
 - warehouse/create_schema.py
 - warehouse/load_warehouse.py
@@ -64,7 +64,7 @@ Accomplished:
 - Implemented an S3-to-Postgres ETL pipeline
 - Post Load verification step for row count assertions
 
-### Phase 4:
+### Phase 4: Automation
 Ran:
 - docker-compose up -d (spins up everything the pipeline needs to run.)
 - docker-compose run --rm airflow-init
