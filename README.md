@@ -27,3 +27,5 @@ Accomplished:
 - Defined all services (Postgres, Airflow webserver, airflow scheduler)
 - Apache Airflow runs inside Docker automatically executing pipeline on schedule (Sunday at 6am)
 - Docker Compose managing entire infrastructure
+    - 'docker-compose up -d' spins up everything the pipeline needs to run.
+    - Trigger DAG in http://localhost:8080/home
