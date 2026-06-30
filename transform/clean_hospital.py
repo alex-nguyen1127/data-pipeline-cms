@@ -142,7 +142,7 @@ def clean_timely_effective_care(df: pd.DataFrame) -> pd.DataFrame:
             df["sample"], errors="coerce"
         ).astype("Int64")
     
-    if "faciity_id" in df.columns:
+    if "facility_id" in df.columns:
         df["facility_id_valid"] = df["facility_id"].str.match(r"^\d{6}$", na=False)
         invalid_count = (~df["facility_id_valid"]).sum()
         if invalid_count > 0:
@@ -164,7 +164,7 @@ def run_transform() -> None:
     transforms = [
         {
             "raw_key": f"{S3_RAW_PREFIX}hospital_general_info.csv",
-            "processed_key": f"{S3_PROCESSED_PREFIX}hospita_general_info.csv",
+            "processed_key": f"{S3_PROCESSED_PREFIX}hospital_general_info.csv",
             "clean_fn": clean_hospital_general_info
         },
         {

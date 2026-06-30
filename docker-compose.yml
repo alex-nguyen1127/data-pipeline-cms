@@ -1,0 +1,102 @@
+version: '3.8'
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.2
+  environment:
+    # Use LocalExecutor (no Celery/Redis needed for a single-machine setup)
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+
+    # Point Airflow's metadata DB at our existing Postgres container
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@postgres:5432/airflow_metadata
+
+    # AWS credentials passed through to DAG tasks
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    AWS_REGION: ${AWS_REGION}
+
+    # CMS pipeline config passed through to DAG tasks
+    S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+    S3_RAW_PREFIX: ${S3_RAW_PREFIX}
+    S3_PROCESSED_PREFIX: ${S3_PROCESSED_PREFIX}
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_NAME: ${DB_NAME}
+    DB_USER: ${DB_USER}
+    DB_PASSWORD: ${DB_PASSWORD}
+
+  volumes:
+    # Mount our project into the Airflow container so it can find our DAG
+    - ./dags:/opt/airflow/dags
+    - ./ingestion:/opt/airflow/ingestion
+    - ./transform:/opt/airflow/transform
+    - ./warehouse:/opt/airflow/warehouse
+    - ./sql:/opt/airflow/sql
+    - airflow-logs:/opt/airflow/logs
+
+  depends_on:
+    - postgres
+
+services:
+
+  # ── Postgres ────────────────────────────────────────────────────────────────
+  # Hosts both the CMS warehouse (cms_warehouse) and Airflow metadata (airflow_metadata)
+  postgres:
+    image: postgres:16
+    container_name: cms-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Init script creates the airflow_metadata database on first start
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "cms_user"]
+      interval: 10s
+      retries: 5
+
+  # ── Airflow init (runs once) ────────────────────────────────────────────────
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate &&
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com
+    restart: "no"
+
+  # ── Airflow webserver ───────────────────────────────────────────────────────
+  airflow-web:
+    <<: *airflow-common
+    container_name: airflow-web
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Airflow scheduler ───────────────────────────────────────────────────────
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: scheduler
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  airflow-logs:
